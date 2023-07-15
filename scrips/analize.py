@@ -17,6 +17,9 @@ def plotData(xValues, yValues, labelName = "", marker = "*"):
 def showPlot():
 	plt.show()
 
+def clearPlot():
+	plt.clf()
+
 
 if __name__ == "__main__":
 	data = openExcel("C:\\Users\\Mateusz\\Desktop\\simpleData\\data1.xlsx")

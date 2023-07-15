@@ -7,6 +7,11 @@ class App(Tk):
 	def __init__(self):
 		self.screen = Tk()
 
+		# ------------------- Val ---------------------------
+		self.chart_options =  ["Plot", "Scatter"]
+		self.marker_options =  ["*", "o"]
+		self.cols = ["Columns names"]
+
 		# ------------------- Style --------------------------
 		style = ttk.Style()
 		style.theme_use("alt")
@@ -51,18 +56,22 @@ class App(Tk):
 
 		chart_type_text = ttk.Label(self.widget_frame_graph, text = "Chart Type: ", background = "#445663")
 		chart_type_text.grid(row = 0, column = 0, padx = 10, pady = (5, 10))
-		self.chart_type = self.createCombolist(self.widget_frame_graph, ["Plot", "Scatter"], 0, 1, 10, (5, 10))
+
+		self.chart_type = self.createCombolist(self.widget_frame_graph, self.chart_options, 0, 1, 10, (5, 10))
 
 		chart_marker_text = ttk.Label(self.widget_frame_graph, text = "Marker: ", background = "#445663")
 		chart_marker_text.grid(row = 1, column = 0, padx = 10, pady = (0, 10))
-		self.marker = self.createCombolist(self.widget_frame_graph, ["*", "o"], 1, 1, 10, (0, 10))
+		self.marker = self.createCombolist(self.widget_frame_graph, self.marker_options, 1, 1, 10, (0, 10))
 
 	
 		self.xValues_entry = self.createCombolist(self.widget_frame_graph, ["x values"], 2, 0, 10, (0, 10), columnspan = 2, sticky = "nsew")
 		self.yValues_entry = self.createCombolist(self.widget_frame_graph, ["y values"],3, 0, 10, (0, 10), columnspan = 2, sticky = "nsew")
 
 		self.button_chr_option = ttk.Button(self.widget_frame_graph, text = "Accept", state = DISABLED, command = self.accepted_chart)
-		self.button_chr_option.grid(row = 4, column = 0, sticky = "nsew", padx = 10, pady = (0, 5), columnspan = 2)
+		self.button_chr_option.grid(row = 4, column = 0, sticky = "nsew", padx = 10, pady = (0, 5), columnspan = 1)
+
+		self.button_clear = ttk.Button(self.widget_frame_graph, text = "Clear", state = DISABLED, command = self.clearPlot)
+		self.button_clear.grid(row = 4, column = 1, sticky = "nsew", padx = 10, pady = (0, 5), columnspan = 1)
 
 		# Buttons
 		self.widget_frame_settings = ttk.Labelframe(self.left_frame, borderwidth = 0)
@@ -79,7 +88,7 @@ class App(Tk):
 		self.dataScroll = ttk.Scrollbar(self.right_frame)
 		self.dataScroll.pack(side = "right", fill = "y")
 
-		self.cols = ["Columns names"]
+		
 		self.dataWindow = ttk.Treeview(self.right_frame, show = "headings", yscrollcommand = self.dataScroll.set, columns = self.cols, height = 20)
 		self.dataWindow.pack()
 		self.dataScroll.config(command=self.dataWindow.yview)
@@ -100,12 +109,13 @@ class App(Tk):
 		return new_combo
 
 	def accepted_excel(self):
-		# Basic 
+		# Get and basic check of file
 		self.file = self.file_name.get() # Getting a file name
 		if self.file == "" or self.file == "Excel Name":
 			showerror(title = "File name empty", message = "The file space was empty")
 			return
 
+		# Check and set min/max index of data in table
 		try:
 			self.min_index = int(self.min.get()) 
 		except:
@@ -116,6 +126,7 @@ class App(Tk):
 			self.max_index = -1
 
 		self.cols = self.column_names.get().split(", ")
+
 		# Save cols to Window with data
 		self.dataWindow.config(columns = self.cols)
 		for col in self.cols:
@@ -131,6 +142,7 @@ class App(Tk):
 				self.dataWindow.delete(item)
 
 		self.button_chr_option.config(state = NORMAL)
+		self.button_clear.config(state = NORMAL)
 		self.load_data()
 
 	def load_data(self):
@@ -153,19 +165,44 @@ class App(Tk):
 		
 
 	def accepted_chart(self):
+		# Checking type option
 		self.type = self.chart_type.get()
+		if self.type not in self.chart_options:
+			showerror(title = "Wrong type", message = f"{self.type} is a wrong chart type")
+			return;
+
+		# Checking markers
 		self.point_marker = self.marker.get()
+		if self.point_marker not in self.marker_options:
+			showerror(title = "Wrong type", message = f"{self.point_marker} is a wrong marker type")
+			return;
 
+		# Checking x values
 		self.xValues = self.xValues_entry.get()
-		self.yValues = self.yValues_entry.get()
+		if self.xValues not in self.cols:
+			showerror(title = "Wrong type", message = f"{self.xValues} is a wrong y-axes value")
+			return;
 
+		# Checking y values
+		self.yValues = self.yValues_entry.get()
+		if self.yValues not in self.cols:
+			showerror(title = "Wrong type", message = f"{self.yValues} is a wrong y-axes value")
+			return;
+
+		# Get graph name
+		self.graph_name = "Data Graph"
+
+		# Use data to plot data
 		if self.type == "Scatter":
-			an.scatterData(self.data[self.xValues],  self.data[self.yValues], "Data Graph", self.point_marker)
+			an.scatterData(self.data[self.xValues],  self.data[self.yValues], self.graph_name, self.point_marker)
 		elif self.type == "Plot":
-			an.plotData(self.data[self.xValues], self.data[self.yValues], "Data Graph", self.point_marker)
+			an.plotData(self.data[self.xValues], self.data[self.yValues], self.graph_name, self.point_marker)
 
 	def createChart(self):
 		an.showPlot()
+
+	def clearPlot(self):
+		an.clearPlot()
 
 	def clearOnce(self, entry):
 		entry.delete("0", "end")
