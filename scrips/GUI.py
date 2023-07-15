@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter.messagebox import showerror
 import tkinter.ttk as ttk
 import analize as an
 
@@ -35,10 +36,9 @@ class App(Tk):
 		self.widget_frame.grid(row = 0, column = 0, padx = 10, pady = (0, 10))
 
 		# Entry fields
-		self.file_name = self.createEntry(self.widget_frame, "Excel Name", 0, 0, 10, (5, 10))
-		self.cells = self.createEntry(self.widget_frame, "Cells range", 0, 1, 10, (5, 10))
-		self.min = self.createEntry(self.widget_frame, "Min points", 1, 0, 10, (0, 10))
-		self.max = self.createEntry(self.widget_frame, "Max points", 1, 1, 10, (0, 10))
+		self.file_name = self.createEntry(self.widget_frame, "Excel Name", 0, 0, 10, (5, 10), 2, sticky = "we")
+		self.min = self.createEntry(self.widget_frame, "First point", 1, 0, 10, (0, 10))
+		self.max = self.createEntry(self.widget_frame, "Last point", 1, 1, 10, (0, 10))
 
 		self.column_names = self.createEntry(self.widget_frame, "Columns names", 2, 0, 10, (0, 10), 2, sticky = "nsew")
 
@@ -89,7 +89,7 @@ class App(Tk):
 	def createEntry(self, root, defaultInsert, row, column, padx, pady, columnspan = 1, rowspan = 1,sticky = ""):
 		new_entry = ttk.Entry(root, background = "#445663")
 		new_entry.insert(0, defaultInsert)
-		new_entry.bind("<FocusIn>", lambda e: new_entry.delete("0", "end"))
+		new_entry.bind("<FocusIn>", lambda e: self.clearOnce(new_entry))
 		new_entry.grid(row = row, column = column, padx = padx, pady = pady, columnspan = columnspan, rowspan = rowspan, sticky = sticky)
 		return new_entry
 
@@ -102,44 +102,71 @@ class App(Tk):
 	def accepted_excel(self):
 		# Basic 
 		self.file = self.file_name.get() # Getting a file name
-		self.cells_range = self.cells.get()
+		if self.file == "" or self.file == "Excel Name":
+			showerror(title = "File name empty", message = "The file space was empty")
+			return
 
-		self.min_val = self.min.get() 
-		self.max_val = self.max.get()
+		try:
+			self.min_index = int(self.min.get()) 
+		except:
+			self.min_index = 0
+		try:
+			self.max_index = int(self.max.get())
+		except:
+			self.max_index = -1
 
 		self.cols = self.column_names.get().split(", ")
+		# Save cols to Window with data
 		self.dataWindow.config(columns = self.cols)
+		for col in self.cols:
+				self.dataWindow.heading(col, text = col)
 
+		# Give cols as a values to my Combolist
 		self.xValues_entry.config(values = self.cols)
 		self.xValues_entry.current(0)
 		self.yValues_entry.config(values = self.cols)
 		self.yValues_entry.current(0)
 
-		self.button_chr_option.config(state = NORMAL)
+		for item in self.dataWindow.get_children():
+				self.dataWindow.delete(item)
 
+		self.button_chr_option.config(state = NORMAL)
 		self.load_data()
+
+	def load_data(self):
+		try:
+			excel = an.openExcel(self.file)
+			self.data = an.lookForColms(excel, self.cols)
+
+			if self.max_index == -1:
+				self.max_index = self.data.index[-1]
+
+			#Lodaing data to data window
+			for index, row in self.data.iterrows():
+				if index >= self.min_index and index <= self.max_index:
+					new_list = row.values.tolist()
+					self.dataWindow.insert("", END , values = new_list)
+			
+		except:
+			showerror(title = "Couldn't find excel", message = f"Couldn't find excel file \"{self.file}\"")
+
+		
 
 	def accepted_chart(self):
 		self.type = self.chart_type.get()
 		self.point_marker = self.marker.get()
 
-		self.xValues = self.xValues_entry.get().split(", ")
-		self.yValues = self.yValues_entry.get().split(", ")
+		self.xValues = self.xValues_entry.get()
+		self.yValues = self.yValues_entry.get()
 
-	def load_data(self):
-		excel = an.openExcel(self.file)
-		self.data = an.lookForColms(excel, self.cols)
-		#print(self.data)
-
-		#Lodaing data to data window
-		for col in self.cols:
-			self.dataWindow.heading(col, text = col)
-
-		for index, row in self.data.iterrows():
-			new_list = row.values.tolist()
-			self.dataWindow.insert("", END , values = new_list)
+		if self.type == "Scatter":
+			an.scatterData(self.data[self.xValues],  self.data[self.yValues], "Data Graph", self.point_marker)
+		elif self.type == "Plot":
+			an.plotData(self.data[self.xValues], self.data[self.yValues], "Data Graph", self.point_marker)
 
 	def createChart(self):
-		if self.type == "Scatter":
-			an.scatterData(self.data["Serial Nr."], self.data["Value"], "Data Graph", "o")
-			an.showPlot()
+		an.showPlot()
+
+	def clearOnce(self, entry):
+		entry.delete("0", "end")
+		entry.unbind("<FocusIn>", None)

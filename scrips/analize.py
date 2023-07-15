@@ -12,7 +12,7 @@ def scatterData(xValues, yValues, labelName = "", marker = "*"):
 	plt.scatter(xValues, yValues, label = labelName, marker = marker)
 
 def plotData(xValues, yValues, labelName = "", marker = "*"):
-	pass
+	plt.plot(xValues, yValues, label = labelName, marker = marker)
 
 def showPlot():
 	plt.show()
@@ -20,8 +20,10 @@ def showPlot():
 
 if __name__ == "__main__":
 	data = openExcel("C:\\Users\\Mateusz\\Desktop\\simpleData\\data1.xlsx")
-	dataFrame = lookForColms(data, ["Nr", "Value", "Serial Nr."])
+	dataFrame = lookForColms(data, ["Nr", "Value", "Serial Nr.", "Average", "UNC"])
+	print(dataFrame)
 
-	scatterData(dataFrame["Value"], dataFrame["Value"])
+	scatterData(dataFrame["Average"], dataFrame["UNC"])
+
 
 	showPlot()
